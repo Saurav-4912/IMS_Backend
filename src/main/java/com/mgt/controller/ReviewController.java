@@ -1,9 +1,9 @@
 package com.mgt.controller;
 
 import com.mgt.jwtServices.JwtService;
-import com.mgt.model.Seller;
+import com.mgt.model.Review;
 import com.mgt.model.User;
-import com.mgt.repository.SellerRepo;
+import com.mgt.repository.ReviewRepo;
 import com.mgt.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,117 +17,113 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:4200")
-public class SellerController {
-
-    @Autowired
-    private UserRepo userRepo;
+public class ReviewController {
 
     @Autowired
     private JwtService jwtService;
 
     @Autowired
-    private SellerRepo sellerRepo;
+    private UserRepo userRepo;
 
-    @PostMapping("/add")
+    @Autowired
+    private ReviewRepo reviewRepo;
+
+    // ✅ 1. Add Review
+    @PostMapping("/addReview")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> addSeller(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @RequestBody Seller sellerRequest) {
+    public ResponseEntity<?> addReview(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody Review reviewRequest) {
 
         try {
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
             }
 
-            String token = authorizationHeader.substring(7);
+            String token = authHeader.substring(7);
             Long userId = jwtService.extractUserId(token);
 
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
 
-            // Get authenticated user
             User user = userRepo.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Link user with seller
-            Seller seller = new Seller();
-            seller.setName(sellerRequest.getName());
-            seller.setEmail(sellerRequest.getEmail());
-            seller.setGrossSale(sellerRequest.getGrossSale());
-            seller.setEarning(sellerRequest.getEarning());
-            seller.setUser(user);
+            Review review = new Review();
+            review.setReviewerName(reviewRequest.getReviewerName());
+            review.setComment(reviewRequest.getComment());
+            review.setRating(reviewRequest.getRating());
+            review.setUser(user);
 
-            Seller saved = sellerRepo.save(seller);
+            Review saved = reviewRepo.save(review);
             return ResponseEntity.ok(saved);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error adding seller: " + e.getMessage());
+                    .body("Error adding review: " + e.getMessage());
         }
     }
 
-
-    @GetMapping("/my-sellers")
+    // ✅ 2. Get My All Reviews
+    @GetMapping("/my-reviews")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> getMySellers(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<?> getMyReviews(@RequestHeader("Authorization") String authHeader) {
         try {
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
             }
 
-            String token = authorizationHeader.substring(7);
+            String token = authHeader.substring(7);
             Long userId = jwtService.extractUserId(token);
 
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
 
-            List<Seller> sellers = sellerRepo.findByUserId(userId);
-            return ResponseEntity.ok(sellers);
+            List<Review> reviews = reviewRepo.findByUserId(userId);
+            return ResponseEntity.ok(reviews);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching sellers: " + e.getMessage());
+                    .body("Error fetching reviews: " + e.getMessage());
         }
     }
 
-    @DeleteMapping("/delete/{id}")
+    // ✅ 3. Delete Review
+    @DeleteMapping("/deleteReview/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> deleteSeller(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable("id") Long sellerId) {
+    public ResponseEntity<?> deleteReview(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable("id") Long reviewId) {
 
         try {
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
             }
 
-            String token = authorizationHeader.substring(7);
+            String token = authHeader.substring(7);
             Long userId = jwtService.extractUserId(token);
 
             if (userId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
 
-            Seller seller = sellerRepo.findById(sellerId)
-                    .orElseThrow(() -> new RuntimeException("Seller not found"));
+            Review review = reviewRepo.findById(reviewId)
+                    .orElseThrow(() -> new RuntimeException("Review not found"));
 
             // Check ownership
-            if (!seller.getUser().getId().equals(userId)) {
+            if (!review.getUser().getId().equals(userId)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("You are not authorized to delete this seller");
+                        .body("You are not authorized to delete this review");
             }
 
-            sellerRepo.deleteById(sellerId);
-            return ResponseEntity.ok(Map.of("message", "Seller deleted successfully"));
+            reviewRepo.deleteById(reviewId);
+            return ResponseEntity.ok(Map.of("message", "Review deleted successfully"));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting seller: " + e.getMessage());
+                    .body("Error deleting review: " + e.getMessage());
         }
     }
-
 }
-
-
