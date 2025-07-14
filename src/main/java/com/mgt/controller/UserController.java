@@ -1,7 +1,9 @@
 package com.mgt.controller;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,34 +78,71 @@ public class UserController {
 
     // Removed the role checks here as they are already managed in SecurityConfig
 
-    @PostMapping("/login")
-    public ResponseEntity<String> authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+   @PostMapping("/login")
+public ResponseEntity<?> authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+    try {
+        // Authenticate user
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
+
+        // Find user by email
+        Optional<User> optionalUser = userRepo.findByEmail(authRequest.getUsername());
+
+        if (optionalUser.isPresent()) {
+                String token = jwtService.generateToken(authRequest.getUsername());
+                return ResponseEntity.ok(token);
+          
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+
+    } catch (AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: " + ex.getMessage());
+    }
+}
+
+ @GetMapping("/getUserById")
+    public ResponseEntity<?> getUserById(@RequestHeader("Authorization") String authorizationHeader) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
-
-            if (authentication.isAuthenticated()) {
-                Optional<User> optionalUser = userRepo.findByEmail(authRequest.getUsername());
-
-                if (optionalUser.isPresent()) {
-                    User user = optionalUser.get();
-
-                    if (user.getStatus() == Status.ACTIVE) {
-                        String token = jwtService.generateToken(authRequest.getUsername());
-                        return ResponseEntity.ok(token);
-                    } else {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not active");
-                    }
-                } else {
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-                }
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            // Step 1: Validate JWT token presence
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Collections.singletonMap("error", "Missing or invalid Authorization header"));
             }
-        } catch (AuthenticationException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: " + ex.getMessage());
+
+            // Step 2: Extract token and userId
+            String token = authorizationHeader.substring(7);
+            Long userId = jwtService.extractUserId(token);  // You should implement this method
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Collections.singletonMap("error", "Invalid JWT token"));
+            }
+
+            // Step 3: Retrieve user from DB
+            Optional<User> optionalUser = userRepo.findById(userId);
+            if (optionalUser.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Collections.singletonMap("error", "User not found"));
+            }
+
+            User user = optionalUser.get();
+
+            // Step 4: Prepare response with role
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", user.getId());
+            response.put("FullName", user.getFull_name());
+            response.put("storeType", user.getStore_type());
+            response.put("role", user.getRole());
+            response.put("status", user.getStatus());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "An error occurred: " + e.getMessage()));
         }
     }
+
 
     // Endpoint accessible to users with ROLE_USER
     @GetMapping("/user/userProfile")

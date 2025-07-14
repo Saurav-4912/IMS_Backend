@@ -28,7 +28,7 @@ public class SellerController {
     @Autowired
     private SellerRepo sellerRepo;
 
-    @PostMapping("/add")
+    @PostMapping("/addSeller")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> addSeller(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -58,8 +58,8 @@ public class SellerController {
             seller.setEarning(sellerRequest.getEarning());
             seller.setUser(user);
 
-            Seller saved = sellerRepo.save(seller);
-            return ResponseEntity.ok(saved);
+            sellerRepo.save(seller);
+            return ResponseEntity.ok(Map.of("message","New seller added"));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

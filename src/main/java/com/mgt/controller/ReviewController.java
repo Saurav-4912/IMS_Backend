@@ -56,8 +56,8 @@ public class ReviewController {
             review.setRating(reviewRequest.getRating());
             review.setUser(user);
 
-            Review saved = reviewRepo.save(review);
-            return ResponseEntity.ok(saved);
+            reviewRepo.save(review);
+            return ResponseEntity.ok(Map.of("message", "Review added successfully"));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
