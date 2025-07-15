@@ -21,6 +21,8 @@ public class DataInitializer implements CommandLineRunner{
 
     @Override
     public void run(String... args) throws Exception {
+
+        System.out.println("Admin credintial is username : admin and password: admin@123");
        
       if(userRepo.count() == 0) {
 
