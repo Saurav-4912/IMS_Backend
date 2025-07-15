@@ -26,6 +26,8 @@ public class Seller {
     @Column(name="earning")
     private Float earning;
 
+    @Column(name="imagePath")
+    private String imagePath;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -81,4 +83,14 @@ public class Seller {
     public void setUser(User user) {
         this.user = user;
     }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    
 }
