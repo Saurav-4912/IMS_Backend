@@ -21,6 +21,9 @@ public class Review {
     @Column(name="rating")
     private int rating;
 
+    @Column(name="imagePath")
+    private String imagePath;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonBackReference
@@ -65,4 +68,14 @@ public class Review {
     public void setUser(User user) {
         this.user = user;
     }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    
 }

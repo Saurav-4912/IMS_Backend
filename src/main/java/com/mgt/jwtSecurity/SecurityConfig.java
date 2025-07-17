@@ -59,7 +59,7 @@ public class SecurityConfig {
                              "/api/login",
                               "/api/getImage/{productId}",
                               "/api/sendOtp",
-                              "/api/verifyOtp","/api/registeredUser","/api/payments/process","/api/seller/serveImage/{filename}")
+                              "/api/verifyOtp","/api/registeredUser","/api/payments/process","/api/seller/serveImage/{filename}","/api/review/serveImage/{filename}")
                         .permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
