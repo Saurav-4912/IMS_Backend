@@ -95,10 +95,8 @@ public class SellerController {
 
     // Serve images
     @GetMapping("/seller/serveImage/{filename}")
-    // @PreAuthorize("permitAll()")
     public ResponseEntity<Resource> getImage(@PathVariable String filename) {
 
-    
         try {
             Path imagePath = Paths.get(uploadDir).resolve(filename).normalize();
             Resource resource = new UrlResource(imagePath.toUri());
